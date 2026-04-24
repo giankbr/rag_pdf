@@ -1,0 +1,31 @@
+{
+  "name": "rag-chatbot-pdf",
+  "version": "1.0.0",
+  "description": "Starter project buat belajar bikin chatbot RAG dari dokumen PDF dan FAQ.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giankbr/rag_pdf.git"
+  },
+  "keywords": [],
+  "author": "gian <vakbarrr@gmail.com> (https://porto-gian.vercel.app/)",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/giankbr/rag_pdf/issues"
+  },
+  "homepage": "https://github.com/giankbr/rag_pdf#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "husky": "^9.1.7"
+  }
+}
