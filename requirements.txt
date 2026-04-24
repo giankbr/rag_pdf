@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+mysql-connector-python
+numpy
+pypdf
+ollama
