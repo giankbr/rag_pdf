@@ -17,9 +17,9 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return float(np.dot(va, vb) / denom)
 
 
-def retrieve_top_k(question: str, k: int = 3) -> list[dict[str, Any]]:
+def retrieve_top_k(question: str, k: int = 3, document_id: int | None = None) -> list[dict[str, Any]]:
     q_vec = embed_text(question)
-    rows = fetch_all_chunks()
+    rows = fetch_all_chunks(document_id=document_id)
     scored: list[dict[str, Any]] = []
     for row in rows:
         emb = row["embedding_json"]

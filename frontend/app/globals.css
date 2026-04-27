@@ -98,6 +98,23 @@ body {
   line-height: 1.35;
 }
 
+.thread-item.active {
+  border-color: #ffcf9f;
+  background: #fff6ee;
+}
+
+.thread-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2438;
+  margin-bottom: 4px;
+}
+
+.thread-meta {
+  font-size: 12px;
+  color: #7d8397;
+}
+
 .history-empty {
   border: 1px dashed #d8deed;
   background: #fbfcff;

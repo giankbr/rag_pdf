@@ -92,8 +92,8 @@ def generate_answer(question: str, context: str) -> str:
     return "LLM provider belum dikenali. Gunakan 'ollama' atau 'openai_compat'."
 
 
-def retrieve_best_faq(question: str) -> dict | None:
-    faqs = fetch_all_faqs()
+def retrieve_best_faq(question: str, document_id: int | None = None) -> dict | None:
+    faqs = fetch_all_faqs(document_id=document_id)
     if not faqs:
         return None
 
@@ -123,9 +123,9 @@ def retrieve_best_faq(question: str) -> dict | None:
     }
 
 
-def answer_question(question: str) -> dict:
+def answer_question(question: str, document_id: int | None = None) -> dict:
     try:
-        top_faq = retrieve_best_faq(question)
+        top_faq = retrieve_best_faq(question, document_id=document_id)
     except Exception as exc:
         return {
             "answer": (
@@ -149,7 +149,7 @@ def answer_question(question: str) -> dict:
         }
 
     try:
-        top_chunks = retrieve_top_k(question, k=settings.rag_top_k)
+        top_chunks = retrieve_top_k(question, k=settings.rag_top_k, document_id=document_id)
     except Exception as exc:
         return {
             "answer": (

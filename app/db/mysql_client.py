@@ -99,20 +99,26 @@ def insert_document(title: str, file_name: str) -> int:
     return int(document_id)
 
 
-def fetch_all_chunks() -> list[dict[str, Any]]:
+def fetch_all_chunks(document_id: int | None = None) -> list[dict[str, Any]]:
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM chunks")
+    if document_id is None:
+        cur.execute("SELECT * FROM chunks")
+    else:
+        cur.execute("SELECT * FROM chunks WHERE document_id = %s", (document_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return rows
 
 
-def fetch_all_faqs() -> list[dict[str, Any]]:
+def fetch_all_faqs(document_id: int | None = None) -> list[dict[str, Any]]:
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM faqs")
+    if document_id is None:
+        cur.execute("SELECT * FROM faqs")
+    else:
+        cur.execute("SELECT * FROM faqs WHERE document_id = %s", (document_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()

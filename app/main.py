@@ -26,6 +26,7 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     question: str
+    document_id: int | None = None
 
 @app.on_event("startup")
 def on_startup() -> None:
@@ -37,7 +38,7 @@ def health() -> dict:
 
 @app.post("/chat")
 def chat(req: ChatRequest) -> dict:
-    return answer_question(req.question)
+    return answer_question(req.question, document_id=req.document_id)
 
 
 @app.post("/upload-pdf")

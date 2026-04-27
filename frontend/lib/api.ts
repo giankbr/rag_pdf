@@ -19,30 +19,34 @@ export type UploadPdfResponse = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8010";
 
-async function postChat(baseUrl: string, question: string): Promise<Response> {
+async function postChat(baseUrl: string, question: string, documentId?: number | null): Promise<Response> {
   return fetch(`${baseUrl}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ question })
+    body: JSON.stringify({
+      question,
+      document_id: documentId ?? null
+    })
   });
 }
 
-export async function askChatbot(question: string): Promise<ChatResponse> {
+export async function askChatbot(params: { question: string; documentId?: number | null }): Promise<ChatResponse> {
+  const { question, documentId } = params;
   let response: Response;
   try {
-    response = await postChat(API_BASE_URL, question);
+    response = await postChat(API_BASE_URL, question, documentId);
   } catch (error) {
     if (API_BASE_URL.endsWith(":8000")) {
-      response = await postChat("http://127.0.0.1:8010", question);
+      response = await postChat("http://127.0.0.1:8010", question, documentId);
     } else {
       throw error;
     }
   }
 
   if (!response.ok && API_BASE_URL.endsWith(":8000")) {
-    response = await postChat("http://127.0.0.1:8010", question);
+    response = await postChat("http://127.0.0.1:8010", question, documentId);
   }
 
   if (!response.ok) {
