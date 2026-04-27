@@ -20,6 +20,12 @@ type ChatThread = {
   updatedAt: number;
 };
 
+type ToastMessage = {
+  id: string;
+  text: string;
+  tone: "info" | "success" | "error";
+};
+
 const THREADS_STORAGE_KEY = "rag_pdf_chat_threads";
 const ACTIVE_THREAD_STORAGE_KEY = "rag_pdf_active_thread_id";
 
@@ -43,7 +49,11 @@ export default function ChatShell() {
   const [question, setQuestion] = useState("");
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string>("");
-  const [uploadStatus, setUploadStatus] = useState<string>("");
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -117,6 +127,14 @@ export default function ChatShell() {
     [threads, activeThreadId]
   );
 
+  function pushToast(text: string, tone: ToastMessage["tone"] = "info") {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setToasts((prev) => [...prev, { id, text, tone }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((item) => item.id !== id));
+    }, 3200);
+  }
+
   const chatMutation = useMutation({
     mutationFn: askChatbot,
     onSuccess: (data, payload) => {
@@ -124,6 +142,7 @@ export default function ChatShell() {
       setThreads((prev) =>
         prev.map((thread) => {
           if (thread.id !== activeThreadId) return thread;
+          const hasUserMessage = thread.messages.some((message) => message.role === "user");
           const updatedMessages = [
             ...thread.messages,
             { role: "user" as const, content: asked },
@@ -131,7 +150,7 @@ export default function ChatShell() {
           ];
           return {
             ...thread,
-            title: thread.messages.length === 0 ? makeThreadTitle(asked) : thread.title,
+            title: hasUserMessage ? thread.title : makeThreadTitle(asked),
             messages: updatedMessages,
             updatedAt: Date.now()
           };
@@ -144,7 +163,7 @@ export default function ChatShell() {
   const uploadMutation = useMutation({
     mutationFn: uploadPdf,
     onSuccess: (data) => {
-      setUploadStatus(`Uploaded ${data.file_name} (${data.chunks} chunks)`);
+      pushToast(`Uploaded ${data.file_name} (${data.chunks} chunks)`, "success");
       setThreads((prev) =>
         prev.map((thread) => {
           if (thread.id !== activeThreadId) return thread;
@@ -165,7 +184,7 @@ export default function ChatShell() {
     },
     onError: (error) => {
       const text = error instanceof Error ? error.message : "Upload failed";
-      setUploadStatus(text);
+      pushToast(text, "error");
     }
   });
 
@@ -183,22 +202,71 @@ export default function ChatShell() {
     setThreads((prev) => [newThread, ...prev]);
     setActiveThreadId(newThread.id);
     setQuestion("");
-    setUploadStatus("");
+  }
+
+  function startRenameThread(threadId: string) {
+    const target = threads.find((thread) => thread.id === threadId);
+    if (!target) return;
+    setRenameTargetId(threadId);
+    setRenameValue(target.title);
+  }
+
+  function confirmRenameThread() {
+    if (!renameTargetId) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed) return;
+    setThreads((prev) =>
+      prev.map((thread) =>
+        thread.id === renameTargetId ? { ...thread, title: trimmed, updatedAt: Date.now() } : thread
+      )
+    );
+    pushToast("Thread renamed", "success");
+    setRenameTargetId(null);
+    setRenameValue("");
+  }
+
+  function startDeleteThread(threadId: string) {
+    setDeleteTargetId(threadId);
+  }
+
+  function confirmDeleteThread() {
+    if (!deleteTargetId) return;
+    const threadId = deleteTargetId;
+    const target = threads.find((thread) => thread.id === threadId);
+    if (!target) return;
+
+    setThreads((prev) => {
+      const remaining = prev.filter((thread) => thread.id !== threadId);
+      if (remaining.length === 0) {
+        const fallback = createEmptyThread();
+        setActiveThreadId(fallback.id);
+        return [fallback];
+      }
+
+      if (activeThreadId === threadId) {
+        setActiveThreadId(remaining[0].id);
+      }
+      return remaining;
+    });
+    pushToast("Thread deleted", "success");
+    setDeleteTargetId(null);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     if (!activeThread) return;
     const file = event.target.files?.[0];
     if (!file) return;
-    setUploadStatus("Uploading PDF...");
+    pushToast("Uploading PDF...", "info");
     uploadMutation.mutate(file);
     event.target.value = "";
   }
 
-  const sortedThreads = useMemo(
-    () => [...threads].sort((a, b) => b.updatedAt - a.updatedAt),
-    [threads]
-  );
+  const sortedThreads = useMemo(() => [...threads].sort((a, b) => b.updatedAt - a.updatedAt), [threads]);
+  const filteredThreads = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return sortedThreads;
+    return sortedThreads.filter((thread) => thread.title.toLowerCase().includes(keyword));
+  }, [sortedThreads, searchTerm]);
 
   return (
     <div className="shell">
@@ -207,28 +275,48 @@ export default function ChatShell() {
         <button className="new-chat-btn" type="button" onClick={createNewChat}>
           + New Chat
         </button>
-        {uploadStatus && <div className="upload-status">{uploadStatus}</div>}
         {activeThread?.activeDocumentId !== null && (
           <div className="upload-status">Active PDF document_id: {activeThread?.activeDocumentId}</div>
         )}
         <div className="menu-title">Chat History</div>
+        <input
+          className="thread-search-input"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search thread..."
+        />
         <div className="prompt-list">
-          {sortedThreads.length === 0 ? (
+          {filteredThreads.length === 0 ? (
             <div className="history-empty">Belum ada history chat.</div>
           ) : (
-            sortedThreads.map((thread) => (
-              <button
+            filteredThreads.map((thread) => (
+              <div
                 key={thread.id}
                 className={`prompt-item thread-item ${thread.id === activeThreadId ? "active" : ""}`}
-                type="button"
-                onClick={() => {
-                  setActiveThreadId(thread.id);
-                  setUploadStatus("");
-                }}
               >
-                <div className="thread-title">{thread.title}</div>
-                <div className="thread-meta">{thread.messages.length} messages</div>
-              </button>
+                <button
+                  className="thread-main-btn"
+                  type="button"
+                  onClick={() => {
+                    setActiveThreadId(thread.id);
+                  }}
+                >
+                  <div className="thread-title">{thread.title}</div>
+                  <div className="thread-meta">{thread.messages.length} messages</div>
+                </button>
+                <div className="thread-actions">
+                  <button type="button" className="thread-action-btn" onClick={() => startRenameThread(thread.id)}>
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    className="thread-action-btn danger"
+                    onClick={() => startDeleteThread(thread.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -283,6 +371,55 @@ export default function ChatShell() {
           </button>
         </form>
       </main>
+
+      {renameTargetId && (
+        <div className="modal-backdrop" onClick={() => setRenameTargetId(null)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <h3>Rename Thread</h3>
+            <input
+              className="modal-input"
+              value={renameValue}
+              onChange={(event) => setRenameValue(event.target.value)}
+              placeholder="Thread title"
+            />
+            <div className="modal-actions">
+              <button className="modal-btn" type="button" onClick={() => setRenameTargetId(null)}>
+                Cancel
+              </button>
+              <button className="modal-btn primary" type="button" onClick={confirmRenameThread}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTargetId && (
+        <div className="modal-backdrop" onClick={() => setDeleteTargetId(null)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <h3>Delete Thread</h3>
+            <p className="modal-text">This thread will be removed permanently.</p>
+            <div className="modal-actions">
+              <button className="modal-btn" type="button" onClick={() => setDeleteTargetId(null)}>
+                Cancel
+              </button>
+              <button className="modal-btn danger" type="button" onClick={confirmDeleteThread}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toasts.length > 0 && (
+        <div className="toast-stack">
+          {toasts.map((toast) => (
+            <div key={toast.id} className={`toast-item ${toast.tone}`}>
+              {toast.text}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
