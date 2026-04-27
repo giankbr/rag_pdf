@@ -117,3 +117,18 @@ def fetch_all_faqs() -> list[dict[str, Any]]:
     cur.close()
     conn.close()
     return rows
+
+
+def count_chunks_by_document(document_id: int) -> int:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT COUNT(*) FROM chunks WHERE document_id = %s
+        """,
+        (document_id,),
+    )
+    total = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return int(total)
