@@ -5,7 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { askChatbot, uploadPdf } from "@/lib/api";
+import { API_BASE_URL, askChatbot, uploadPdf } from "@/lib/api";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -164,7 +164,7 @@ export default function ChatShell() {
     mutationFn: uploadPdf,
     onSuccess: (data) => {
       pushToast(`Uploaded ${data.file_name} (${data.chunks} chunks)`, "success");
-      const absoluteFileUrl = new URL(data.file_url, window.location.origin).toString();
+      const absoluteFileUrl = new URL(data.file_url, API_BASE_URL).toString();
       setThreads((prev) =>
         prev.map((thread) => {
           if (thread.id !== activeThreadId) return thread;
@@ -278,9 +278,6 @@ export default function ChatShell() {
         <button className="new-chat-btn" type="button" onClick={createNewChat}>
           + New Chat
         </button>
-        {activeThread?.activeDocumentId !== null && (
-          <div className="upload-status">Active PDF document_id: {activeThread?.activeDocumentId}</div>
-        )}
         <div className="menu-title">Chat History</div>
         <input
           className="thread-search-input"
@@ -359,6 +356,9 @@ export default function ChatShell() {
         </section>
 
         <form className="composer" onSubmit={handleSubmit}>
+          {activeThread?.activeDocumentId !== null && (
+            <div className="active-doc-badge">Active PDF document_id: {activeThread?.activeDocumentId}</div>
+          )}
           <label className="upload-btn inline" htmlFor="pdf-upload">
             Upload PDF
           </label>

@@ -18,7 +18,7 @@ export type UploadPdfResponse = {
   file_url: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8010";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8010";
 
 async function postChat(baseUrl: string, question: string, documentId?: number | null): Promise<Response> {
   return fetch(`${baseUrl}/chat`, {
