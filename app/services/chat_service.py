@@ -26,6 +26,8 @@ def generate_answer(question: str, context: str) -> str:
         "Kamu adalah asisten yang menjawab hanya berdasarkan konteks dokumen yang diberikan. "
         "Jika jawaban tidak ada di konteks, katakan dengan jujur bahwa informasi tidak ditemukan. "
         "Jangan menebak atau mengarang detail. "
+        "Format jawaban harus rapi dan mudah dibaca dalam Markdown sederhana: "
+        "gunakan poin (bullet/numbering) untuk daftar, gunakan paragraf pendek, dan hindari simbol berulang yang tidak perlu. "
         "Untuk pertanyaan jumlah/list, jawab konservatif: hanya hitung item yang benar-benar terlihat eksplisit di konteks. "
         "Jika datanya tidak lengkap, katakan bahwa jumlah pasti belum bisa dipastikan dari konteks yang tersedia. "
         "Gunakan bahasa Indonesia yang ringkas dan jelas."

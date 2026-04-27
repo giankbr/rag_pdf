@@ -32,17 +32,34 @@ python scripts/ingest_one.py
 
 Jalankan API:
 ```bash
+APP_PORT=8010 bash scripts/run_api.sh
+```
+
+Atau pakai default script (otomatis pakai 8010 jika `APP_PORT` tidak diset):
+```bash
 bash scripts/run_api.sh
 ```
 
+Jalankan frontend (Next.js):
+```bash
+cd frontend
+npm install
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8010 npm run dev
+```
+
+Upload PDF dari UI:
+- Klik tombol `Upload PDF` di sidebar.
+- Tunggu status `berhasil diupload dan diingest`.
+- Setelah selesai, PDF bisa langsung ditanya via chat.
+
 Cek health:
 ```bash
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8010/health
 ```
 
 Contoh chat:
 ```bash
-curl -X POST http://127.0.0.1:8000/chat \
+curl -X POST http://127.0.0.1:8010/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Apa itu API SIAPDIK?"}'
 ```
