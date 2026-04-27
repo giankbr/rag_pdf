@@ -2,6 +2,10 @@
   color-scheme: light;
   background: #f2f3f7;
   color: #131722;
+  --brand-primary: #1f61d1;
+  --brand-primary-strong: #1a54b6;
+  --brand-primary-soft: #eef4ff;
+  --brand-primary-border: #c9dafd;
 }
 
 * {
@@ -39,7 +43,7 @@ body {
 .new-chat-btn {
   border: none;
   border-radius: 10px;
-  background: #ff8a28;
+  background: var(--brand-primary);
   color: #fff;
   height: 40px;
   cursor: pointer;
@@ -47,9 +51,9 @@ body {
 }
 
 .upload-btn {
-  border: 1px solid #ff8a28;
+  border: 1px solid var(--brand-primary);
   border-radius: 10px;
-  color: #ff8a28;
+  color: var(--brand-primary);
   height: 38px;
   display: grid;
   place-items: center;
@@ -66,9 +70,9 @@ body {
 
 .upload-status {
   border-radius: 10px;
-  background: #fff6ee;
-  border: 1px solid #ffd5b1;
-  color: #8b4a10;
+  background: var(--brand-primary-soft);
+  border: 1px solid var(--brand-primary-border);
+  color: var(--brand-primary-strong);
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.35;
@@ -108,8 +112,8 @@ body {
 }
 
 .thread-item.active {
-  border-color: #ffcf9f;
-  background: #fff6ee;
+  border-color: var(--brand-primary-border);
+  background: var(--brand-primary-soft);
 }
 
 .thread-main-btn {
@@ -226,8 +230,8 @@ body {
 
 .bubble.user {
   align-self: flex-end;
-  background: #fff1e4;
-  border-color: #ffd8b3;
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
 }
 
 .bubble.assistant {
@@ -268,6 +272,11 @@ body {
 
 .markdown-body strong {
   font-weight: 700;
+}
+
+.markdown-body a {
+  color: #1f61d1;
+  text-decoration: underline;
 }
 
 .bubble-role {
@@ -324,7 +333,7 @@ body {
   height: 44px;
   border: none;
   border-radius: 12px;
-  background: #ff8a28;
+  background: var(--brand-primary);
   color: #fff;
   font-weight: 600;
   font-size: 15px;
@@ -396,7 +405,7 @@ body {
 
 .modal-btn.primary {
   border: none;
-  background: #ff8a28;
+  background: var(--brand-primary);
   color: #fff;
 }
 

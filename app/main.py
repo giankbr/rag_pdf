@@ -1,7 +1,9 @@
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.config import settings
@@ -23,6 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/files/raw_pdfs", StaticFiles(directory="data/raw_pdfs"), name="raw_pdfs")
 
 class ChatRequest(BaseModel):
     question: str
@@ -76,4 +80,5 @@ def upload_pdf(file: UploadFile = File(...)) -> dict:
         "document_id": document_id,
         "file_name": target_path.name,
         "chunks": total_chunks,
+        "file_url": f"/files/raw_pdfs/{quote(target_path.name)}",
     }

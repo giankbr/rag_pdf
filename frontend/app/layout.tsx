@@ -6,7 +6,7 @@ import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RAG Chatbot PDF",
+  title: "NOVA AI PDF",
   description: "Frontend chat interface for RAG PDF backend"
 };
 

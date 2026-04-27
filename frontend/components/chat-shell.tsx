@@ -164,6 +164,7 @@ export default function ChatShell() {
     mutationFn: uploadPdf,
     onSuccess: (data) => {
       pushToast(`Uploaded ${data.file_name} (${data.chunks} chunks)`, "success");
+      const absoluteFileUrl = new URL(data.file_url, window.location.origin).toString();
       setThreads((prev) =>
         prev.map((thread) => {
           if (thread.id !== activeThreadId) return thread;
@@ -174,7 +175,9 @@ export default function ChatShell() {
               ...thread.messages,
               {
                 role: "assistant",
-                content: `PDF "${data.file_name}" berhasil diupload dan diingest (${data.chunks} chunks).`
+                content:
+                  `PDF [${data.file_name}](${absoluteFileUrl}) berhasil diupload ` +
+                  `dan diingest (${data.chunks} chunks).`
               }
             ],
             updatedAt: Date.now()
@@ -271,7 +274,7 @@ export default function ChatShell() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">RAG PDF</div>
+        <div className="brand">NOVA AI PDF</div>
         <button className="new-chat-btn" type="button" onClick={createNewChat}>
           + New Chat
         </button>
@@ -324,8 +327,7 @@ export default function ChatShell() {
 
       <main className="chat-panel">
         <header className="topbar">
-          <div className="topbar-title">RAG Chatbot PDF</div>
-          <div className="topbar-subtitle">Next.js + TanStack Query</div>
+          <div className="topbar-title">NOVA AI PDF</div>
         </header>
 
         <section className="conversation">
