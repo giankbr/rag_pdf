@@ -45,6 +45,13 @@ function createEmptyThread(): ChatThread {
   };
 }
 
+function normalizeAssistantContent(content: string): string {
+  const backendFilesBase = `${API_BASE_URL.replace(/\/$/, "")}/files/raw_pdfs/`;
+  return content
+    .replaceAll("http://localhost:3000/files/raw_pdfs/", backendFilesBase)
+    .replaceAll("http://127.0.0.1:3000/files/raw_pdfs/", backendFilesBase);
+}
+
 export default function ChatShell() {
   const [question, setQuestion] = useState("");
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -339,7 +346,9 @@ export default function ChatShell() {
                 <div className="bubble-role">{message.role === "user" ? "You" : "Assistant"}</div>
                 {message.role === "assistant" ? (
                   <div className="markdown-body">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {normalizeAssistantContent(message.content)}
+                    </ReactMarkdown>
                   </div>
                 ) : (
                   <p>{message.content}</p>
