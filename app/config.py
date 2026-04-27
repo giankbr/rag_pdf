@@ -29,6 +29,7 @@ class Settings:
     ollama_chat_model: str = os.getenv("OLLAMA_CHAT_MODEL", "qwen2.5:3b")
     rag_top_k: int = int(os.getenv("RAG_TOP_K", "2"))
     rag_min_score: float = float(os.getenv("RAG_MIN_SCORE", "0.45"))
+    faq_min_score: float = float(os.getenv("FAQ_MIN_SCORE", "0.7"))
     rag_max_context_chars: int = int(os.getenv("RAG_MAX_CONTEXT_CHARS", "1400"))
     ollama_num_predict: int = int(os.getenv("OLLAMA_NUM_PREDICT", "140"))
     ollama_temperature: float = float(os.getenv("OLLAMA_TEMPERATURE", "0.2"))

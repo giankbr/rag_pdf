@@ -6,7 +6,7 @@ from ollama import Client
 from pypdf import PdfReader
 
 from app.config import settings
-from app.db.mysql_client import insert_chunk
+from app.db.mysql_client import insert_chunk, insert_document
 
 
 def chunk_text(text: str, chunk_size: int = 700, overlap: int = 120) -> list[str]:
@@ -68,7 +68,8 @@ def ingest_pdf(pdf_path: str, document_id: int) -> None:
             )
 
 
-def ingest_all_raw_pdfs(document_id_start: int = 1) -> None:
+def ingest_all_raw_pdfs() -> None:
     raw_folder = Path("data/raw_pdfs")
-    for i, pdf_file in enumerate(sorted(raw_folder.glob("*.pdf"))):
-        ingest_pdf(str(pdf_file), document_id=document_id_start + i)
+    for pdf_file in sorted(raw_folder.glob("*.pdf")):
+        document_id = insert_document(title=pdf_file.stem, file_name=pdf_file.name)
+        ingest_pdf(str(pdf_file), document_id=document_id)

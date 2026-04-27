@@ -82,10 +82,37 @@ def insert_chunk(
     conn.close()
 
 
+def insert_document(title: str, file_name: str) -> int:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO documents (title, file_name)
+        VALUES (%s, %s)
+        """,
+        (title, file_name),
+    )
+    document_id = cur.lastrowid
+    conn.commit()
+    cur.close()
+    conn.close()
+    return int(document_id)
+
+
 def fetch_all_chunks() -> list[dict[str, Any]]:
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
     cur.execute("SELECT * FROM chunks")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def fetch_all_faqs() -> list[dict[str, Any]]:
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM faqs")
     rows = cur.fetchall()
     cur.close()
     conn.close()

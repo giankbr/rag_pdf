@@ -5,30 +5,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.db.mysql_client import get_connection, init_schema
+from app.db.mysql_client import get_connection, init_schema, insert_document
 from app.rag.ingest import ingest_pdf
 
 PDF_PATH = "data/raw_pdfs/Dokumentasi API SIAPDIK.pdf"
 DOCUMENT_TITLE = "Dokumentasi API SIAPDIK"
-
-def insert_document(title: str, file_name: str) -> int:
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        INSERT INTO documents (title, file_name)
-        VALUES (%s, %s)
-        """,
-        (title, file_name),
-    )
-
-    document_id = cur.lastrowid
-    conn.commit()
-    cur.close()
-    conn.close()
-    return document_id
-
 
 def count_chunks(document_id: int) -> int:
     conn = get_connection()

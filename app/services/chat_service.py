@@ -4,6 +4,9 @@ from urllib import request
 from ollama import Client
 
 from app.config import settings
+from app.db.mysql_client import fetch_all_faqs
+from app.rag.ingest import embed_text
+from app.rag.retriever import cosine_similarity
 from app.rag.retriever import retrieve_top_k
 
 
@@ -87,7 +90,62 @@ def generate_answer(question: str, context: str) -> str:
     return "LLM provider belum dikenali. Gunakan 'ollama' atau 'openai_compat'."
 
 
+def retrieve_best_faq(question: str) -> dict | None:
+    faqs = fetch_all_faqs()
+    if not faqs:
+        return None
+
+    q_vec = embed_text(question)
+    best_item: dict | None = None
+    best_score = -1.0
+
+    for faq in faqs:
+        faq_question = (faq.get("question") or "").strip()
+        if not faq_question:
+            continue
+        faq_vec = embed_text(faq_question)
+        score = cosine_similarity(q_vec, faq_vec)
+        if score > best_score:
+            best_score = score
+            best_item = faq
+
+    if not best_item or best_score < settings.faq_min_score:
+        return None
+
+    return {
+        "document_id": best_item["document_id"],
+        "source_page": best_item.get("source_page"),
+        "question": best_item["question"],
+        "answer": best_item["answer"],
+        "score": best_score,
+    }
+
+
 def answer_question(question: str) -> dict:
+    try:
+        top_faq = retrieve_best_faq(question)
+    except Exception as exc:
+        return {
+            "answer": (
+                "FAQ retrieval gagal saat embedding query. "
+                f"Detail: {type(exc).__name__}: {exc}"
+            ),
+            "sources": [],
+        }
+
+    if top_faq:
+        return {
+            "answer": top_faq["answer"],
+            "sources": [
+                {
+                    "document_id": top_faq["document_id"],
+                    "page_number": top_faq["source_page"],
+                    "score": top_faq["score"],
+                    "source_type": "faq",
+                }
+            ],
+        }
+
     try:
         top_chunks = retrieve_top_k(question, k=settings.rag_top_k)
     except Exception as exc:
@@ -110,7 +168,12 @@ def answer_question(question: str) -> dict:
     return {
         "answer": answer,
         "sources": [
-            {"document_id": c["document_id"], "page_number": c["page_number"], "score": c["score"]}
+            {
+                "document_id": c["document_id"],
+                "page_number": c["page_number"],
+                "score": c["score"],
+                "source_type": "chunk",
+            }
             for c in top_chunks
         ],
     }
