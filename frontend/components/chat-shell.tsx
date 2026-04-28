@@ -26,6 +26,11 @@ type ToastMessage = {
   tone: "info" | "success" | "error";
 };
 
+type UploadPayload = {
+  file: File;
+  onProgress: (percent: number) => void;
+};
+
 const THREADS_STORAGE_KEY = "rag_pdf_chat_threads";
 const ACTIVE_THREAD_STORAGE_KEY = "rag_pdf_active_thread_id";
 
@@ -56,11 +61,15 @@ export default function ChatShell() {
   const [question, setQuestion] = useState("");
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string>("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<"uploading" | "processing">("uploading");
+  const [uploadingFileName, setUploadingFileName] = useState("");
 
   useEffect(() => {
     try {
@@ -168,8 +177,9 @@ export default function ChatShell() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: uploadPdf,
+    mutationFn: ({ file, onProgress }: UploadPayload) => uploadPdf(file, { onProgress }),
     onSuccess: (data) => {
+      setUploadProgress(100);
       pushToast(`Uploaded ${data.file_name} (${data.chunks} chunks)`, "success");
       const absoluteFileUrl = new URL(data.file_url, API_BASE_URL).toString();
       setThreads((prev) =>
@@ -191,10 +201,18 @@ export default function ChatShell() {
           };
         })
       );
+      window.setTimeout(() => {
+        setUploadProgress(null);
+        setUploadPhase("uploading");
+        setUploadingFileName("");
+      }, 800);
     },
     onError: (error) => {
+      setUploadProgress(null);
+      setUploadPhase("uploading");
       const text = error instanceof Error ? error.message : "Upload failed";
       pushToast(text, "error");
+      setUploadingFileName("");
     }
   });
 
@@ -264,10 +282,22 @@ export default function ChatShell() {
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     if (!activeThread) return;
+    if (uploadMutation.isPending) return;
     const file = event.target.files?.[0];
     if (!file) return;
-    pushToast("Uploading PDF...", "info");
-    uploadMutation.mutate(file);
+    setUploadPhase("uploading");
+    setUploadingFileName(file.name);
+    setUploadProgress(0);
+    pushToast(`Uploading ${file.name}...`, "info");
+    uploadMutation.mutate({
+      file,
+      onProgress: (percent) => {
+        setUploadProgress(percent);
+        if (percent >= 95) {
+          setUploadPhase("processing");
+        }
+      }
+    });
     event.target.value = "";
   }
 
@@ -280,8 +310,10 @@ export default function ChatShell() {
 
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">NOVA AI PDF</div>
+      <aside className={`sidebar ${isSidebarOpen ? "is-open" : ""}`}>
+        <div className="brand-row">
+          <div className="brand">NOVA AI PDF</div>
+        </div>
         <button className="new-chat-btn" type="button" onClick={createNewChat}>
           + New Chat
         </button>
@@ -306,6 +338,7 @@ export default function ChatShell() {
                   type="button"
                   onClick={() => {
                     setActiveThreadId(thread.id);
+                    setIsSidebarOpen(false);
                   }}
                 >
                   <div className="thread-title">{thread.title}</div>
@@ -331,14 +364,50 @@ export default function ChatShell() {
 
       <main className="chat-panel">
         <header className="topbar">
-          <div className="topbar-title">NOVA AI PDF</div>
+          <div className="topbar-left">
+            <button
+              type="button"
+              className="hamburger-btn"
+              aria-label="Toggle sidebar"
+              aria-expanded={isSidebarOpen}
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+            >
+              <span className={`hamburger-icon ${isSidebarOpen ? "is-open" : ""}`} aria-hidden="true">
+                {isSidebarOpen ? "✕" : "☰"}
+              </span>
+            </button>
+            <div className="topbar-title">NOVA AI PDF</div>
+          </div>
+          <div className="topbar-actions">
+            <button type="button" className="topbar-action-btn">
+              Link
+            </button>
+            <button type="button" className="topbar-action-btn">
+              Share
+            </button>
+          </div>
         </header>
 
         <section className="conversation">
           {!activeThread || activeThread.messages.length === 0 ? (
             <div className="empty-state">
+              <div className="empty-mark">+</div>
               <h1>Let&apos;s start a smart conversation</h1>
               <p>Ask about your PDF docs and we will retrieve answers from FAQ or RAG chunks.</p>
+              <div className="empty-cards">
+                <div className="empty-card">
+                  <h4>Summarize Text</h4>
+                  <p>Turn long content into concise summaries.</p>
+                </div>
+                <div className="empty-card">
+                  <h4>Creative Writing</h4>
+                  <p>Generate drafts and ideas in seconds.</p>
+                </div>
+                <div className="empty-card">
+                  <h4>Answer Questions</h4>
+                  <p>Ask anything from uploaded PDF context.</p>
+                </div>
+              </div>
             </div>
           ) : (
             activeThread.messages.map((message, idx) => (
@@ -368,8 +437,23 @@ export default function ChatShell() {
           {activeThread?.activeDocumentId !== null && (
             <div className="active-doc-badge">Active PDF document_id: {activeThread?.activeDocumentId}</div>
           )}
-          <label className="upload-btn inline" htmlFor="pdf-upload">
-            Upload PDF
+          {uploadProgress !== null && (
+            <div className="upload-progress-wrap" aria-live="polite">
+              <div className="upload-progress-label">
+                {uploadPhase === "uploading"
+                  ? `Uploading ${uploadingFileName || "PDF"} - ${uploadProgress}%`
+                  : `Processing ${uploadingFileName || "PDF"} on server...`}
+              </div>
+              <div className="upload-progress-track">
+                <div className="upload-progress-fill" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </div>
+          )}
+          <label
+            className={`upload-btn inline ${uploadMutation.isPending ? "is-disabled" : ""}`}
+            htmlFor="pdf-upload"
+          >
+            {uploadMutation.isPending ? "Uploading..." : "Upload PDF"}
           </label>
           <input id="pdf-upload" type="file" accept="application/pdf" onChange={handleFileUpload} hidden />
           <input
@@ -431,6 +515,7 @@ export default function ChatShell() {
           ))}
         </div>
       )}
+      {isSidebarOpen && <button type="button" className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />}
     </div>
   );
 }
