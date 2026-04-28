@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -70,6 +70,8 @@ export default function ChatShell() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"uploading" | "processing">("uploading");
   const [uploadingFileName, setUploadingFileName] = useState("");
+  const sidebarTouchStartXRef = useRef<number | null>(null);
+  const sidebarTouchStartYRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -137,6 +139,19 @@ export default function ChatShell() {
     if (!activeThreadId) return;
     window.localStorage.setItem(ACTIVE_THREAD_STORAGE_KEY, activeThreadId);
   }, [activeThreadId]);
+
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isSidebarOpen]);
 
   const activeThread = useMemo(
     () => threads.find((thread) => thread.id === activeThreadId) ?? null,
@@ -301,6 +316,28 @@ export default function ChatShell() {
     event.target.value = "";
   }
 
+  function handleSidebarTouchStart(event: TouchEvent<HTMLElement>) {
+    const touch = event.touches[0];
+    if (!touch) return;
+    sidebarTouchStartXRef.current = touch.clientX;
+    sidebarTouchStartYRef.current = touch.clientY;
+  }
+
+  function handleSidebarTouchEnd(event: TouchEvent<HTMLElement>) {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const startX = sidebarTouchStartXRef.current;
+    const startY = sidebarTouchStartYRef.current;
+    sidebarTouchStartXRef.current = null;
+    sidebarTouchStartYRef.current = null;
+    if (startX === null || startY === null) return;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    if (deltaX < -60 && Math.abs(deltaY) < 55) {
+      setIsSidebarOpen(false);
+    }
+  }
+
   const sortedThreads = useMemo(() => [...threads].sort((a, b) => b.updatedAt - a.updatedAt), [threads]);
   const filteredThreads = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -310,9 +347,21 @@ export default function ChatShell() {
 
   return (
     <div className="shell">
-      <aside className={`sidebar ${isSidebarOpen ? "is-open" : ""}`}>
+      <aside
+        className={`sidebar ${isSidebarOpen ? "is-open" : ""}`}
+        onTouchStart={handleSidebarTouchStart}
+        onTouchEnd={handleSidebarTouchEnd}
+      >
         <div className="brand-row">
           <div className="brand">NOVA AI PDF</div>
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            aria-label="Close sidebar"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            x
+          </button>
         </div>
         <button className="new-chat-btn" type="button" onClick={createNewChat}>
           + New Chat
@@ -367,13 +416,15 @@ export default function ChatShell() {
           <div className="topbar-left">
             <button
               type="button"
-              className="hamburger-btn"
+              className={`hamburger-btn ${isSidebarOpen ? "is-active" : ""}`}
               aria-label="Toggle sidebar"
               aria-expanded={isSidebarOpen}
               onClick={() => setIsSidebarOpen((prev) => !prev)}
             >
               <span className={`hamburger-icon ${isSidebarOpen ? "is-open" : ""}`} aria-hidden="true">
-                {isSidebarOpen ? "✕" : "☰"}
+                <span className="hamburger-line" />
+                <span className="hamburger-line" />
+                <span className="hamburger-line" />
               </span>
             </button>
             <div className="topbar-title">NOVA AI PDF</div>

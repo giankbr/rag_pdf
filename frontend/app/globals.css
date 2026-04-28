@@ -48,12 +48,29 @@ select {
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 0;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .brand {
   font-weight: 700;
   font-size: 31px;
+}
+
+.sidebar-close-btn {
+  display: none;
+  border: 1px solid #d7ddeb;
+  background: #fff;
+  color: #4b5573;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
 }
 
 .new-chat-btn {
@@ -226,15 +243,37 @@ select {
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 
 .hamburger-icon {
+  width: 16px;
+  height: 12px;
   display: inline-flex;
-  transition: transform 160ms ease, opacity 140ms ease;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.hamburger-icon.is-open {
-  transform: rotate(90deg);
+.hamburger-line {
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 160ms ease, opacity 140ms ease;
+  transform-origin: center;
+}
+
+.hamburger-icon.is-open .hamburger-line:nth-child(1) {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.hamburger-icon.is-open .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-icon.is-open .hamburger-line:nth-child(3) {
+  transform: translateY(-5px) rotate(-45deg);
 }
 
 .topbar-title {
@@ -655,6 +694,15 @@ select {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .hamburger-btn.is-active {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex;
   }
 
   .sidebar-backdrop {
